@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  # اسم السيرفيس
+  postgres_db:
+    image: postgres:15-alpine # هنستخدم صورة بوستجرس خفيفة
+    restart: always
+    environment:
+      # دي أهم خطوة: لازم البيانات دي تطابق ملف .env بتاعك
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: test_project_db
+    ports:
+      # ده بيربط بورت 5432 جوه دوكر بـ 5432 على جهازك
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # ده عشان الداتا متتمسحش لو قفلت دوكر
+
+volumes:
+  postgres_data:

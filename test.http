@@ -1,0 +1,212 @@
+### ==========================================================
+### 🔑 SETUP: AUTHENTICATION & TOKENS
+### (املأ المتغيرات التالية بالبيانات الناتجة من الطلبات 1 و 2 و 6)
+### ==========================================================
+
+@user_email = user_api_test@example.com
+@user_password = Password123
+@user_token =
+@artist_token =
+@api_key =
+@artist_id = 1
+@song_id = 1
+
+
+### 1. 👥 SIGN UP (USER) - Run this first
+# Endpoint: POST /auth/signup
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "email": "{{user_email}}",
+  "password": "{{user_password}}",
+  "firstName": "Auth",
+  "lastName": "Test"
+}
+
+### 2. 🔑 LOGIN (GET JWT TOKEN) - Run this second
+# ✅ SUCCESS: انسخ الـ accessToken وضعه في متغير @user_token
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{user_email}}",
+  "password": "{{user_password}}"
+}
+
+
+### ==========================================================
+### 🧑‍💻 USERS MODULE (Testing CRUD & Serialization)
+### ==========================================================
+
+### 3. GET ALL USERS (Test Serialization)
+# Endpoint: GET /users
+# ✅ SUCCESS: يجب أن ينجح ويرجع بيانات المستخدم بدون حقل password أو apiKey.
+GET http://localhost:3000/users
+Authorization: Bearer {{user_token}}
+
+### 4. GET USER BY ID
+# Endpoint: GET /users/:id
+GET http://localhost:3000/users/1
+Authorization: Bearer {{user_token}}
+
+### 5. UPDATE USER (PATCH)
+# Endpoint: PATCH /users/:id
+PATCH http://localhost:3000/users/1
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "firstName": "UpdatedFirstName"
+}
+
+### 6. DELETE USER
+# Endpoint: DELETE /users/:id
+DELETE http://localhost:3000/users/1
+Authorization: Bearer {{user_token}}
+
+
+### ==========================================================
+### 🎶 ARTISTS MODULE (API Key Guard Test)
+### ==========================================================
+
+### 7. CREATE ARTIST (SETUP)
+# Endpoint: POST /artists
+# NOTE: يُفضل استخدام حماية JWT هنا، لكن نتركه مؤقتاً غير محمي في الكورس.
+POST http://localhost:3000/artists
+Content-Type: application/json
+
+{
+  "name": "Ezat Singer (ID: 1)"
+}
+
+### 8. GET ALL ARTISTS (FAIL without Key)
+# Endpoint: GET /artists
+# 🛑 FAILURE: يجب أن يفشل بـ 401 Unauthorized (لأنه لم يجد API Key)
+GET http://localhost:3000/artists
+
+
+### 9. GET ALL ARTISTS (Success with API Key)
+# Endpoint: GET /artists
+# ✅ SUCCESS: يجب أن تنجح بمجرد وضع الـ API Key الصحيح في متغير @api_key
+GET http://localhost:3000/artists
+Authorization: Bearer {{api_key}}
+
+### 10. GET ARTIST BY ID
+# Endpoint: GET /artists/:id
+GET http://localhost:3000/artists/{{artist_id}}
+Authorization: Bearer {{api_key}}
+
+### 11. UPDATE ARTIST
+# Endpoint: PATCH /artists/:id
+PATCH http://localhost:3000/artists/{{artist_id}}
+Content-Type: application/json
+Authorization: Bearer {{api_key}}
+
+{
+  "name": "Updated Artist Name"
+}
+
+### 12. DELETE ARTIST
+# Endpoint: DELETE /artists/:id
+DELETE http://localhost:3000/artists/{{artist_id}}
+Authorization: Bearer {{api_key}}
+
+
+### ==========================================================
+### 🎧 SONGS MODULE (JWT & Roles Guard Test)
+### ==========================================================
+
+### 13. FAIL: Create Song (Unauthorized Role - User is USER)
+# Endpoint: POST /songs
+# 🛑 FAILURE: يجب أن يفشل بـ 403 Forbidden (لتأكيد عمل RolesGuard)
+POST http://localhost:3000/songs
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title": "Unauthorized Song",
+  "artistId": 1
+}
+
+### 14. GET ALL SONGS (Secured - Needs JWT)
+# Endpoint: GET /songs
+GET http://localhost:3000/songs
+Authorization: Bearer {{user_token}}
+
+### 15. GET SONG BY ID
+# Endpoint: GET /songs/:id
+GET http://localhost:3000/songs/{{song_id}}
+Authorization: Bearer {{user_token}}
+
+
+### ==========================================================
+### 🔐 TWO-FACTOR AUTHENTICATION (2FA)
+### ==========================================================
+
+### 16. GENERATE 2FA SECRET (QR Code)
+# Endpoint: POST /auth/2fa/generate
+POST http://localhost:3000/auth/2fa/generate
+Authorization: Bearer {{user_token}}
+
+### 17. TURN ON 2FA
+# Endpoint: POST /auth/2fa/turn-on
+POST http://localhost:3000/auth/2fa/turn-on
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "twoFactorCode": "123456"
+}
+
+### 18. AUTHENTICATE WITH 2FA
+# Endpoint: POST /auth/2fa/authenticate
+POST http://localhost:3000/auth/2fa/authenticate
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "twoFactorCode": "123456"
+}
+
+
+### ==========================================================
+### 🏥 APP HEALTH CHECK
+### ==========================================================
+
+### 19. APP HEALTH CHECK
+# Endpoint: GET /
+GET http://localhost:3000/
+
+### ==========================================================
+### 🔐 اختبار المصادقة الثنائية (2FA)
+### ==========================================================
+
+### 13. (2FA) توليد المفتاح السري والـ QR Code
+# Endpoint: POST /auth/2fa/generate
+# ✅ SUCCESS: سيعود لك المفتاح السري (twoFactorSecret) ورابط الـ QR
+POST http://localhost:3000/auth/2fa/generate
+Authorization: Bearer {{user_token}}
+
+### 14. (2FA) تأكيد التفعيل (Turn-On)
+# 🛑 النتيجة المتوقعة: 200 OK (إذا كان الكود صحيحًا)
+# 💡 يجب إدخال كود فعلي من تطبيق Google Authenticator بعد عمل Scan للـ URL الناتج من الطلب 13.
+POST http://localhost:3000/auth/2fa/turn-on
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "twoFactorCode": "123456" 
+  // 🚨 ضع هنا الكود الحقيقي المولد من تطبيق Authenticator 🚨
+}
+
+### 15. (2FA) محاولة الدخول بعد التفعيل
+# Endpoint: POST /auth/2fa/authenticate
+# 🛑 النتيجة المتوقعة: 200 OK (لإتمام عملية اللوجن)
+POST http://localhost:3000/auth/2fa/authenticate
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "twoFactorCode": "123456" // 🚨 ضع الكود الحقيقي هنا 🚨
+}
